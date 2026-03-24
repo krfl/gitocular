@@ -22,7 +22,7 @@ pub(crate) fn render_detail(frame: &mut Frame, state: &AppState) {
                 "Current branch: ",
                 Style::default().add_modifier(Modifier::BOLD),
             ),
-            Span::styled(&repo.current_branch, Style::default().fg(Color::Cyan)),
+            Span::styled(&repo.current_branch, Style::default().fg(Color::Blue)),
         ]),
     ];
 
@@ -32,7 +32,7 @@ pub(crate) fn render_detail(frame: &mut Frame, state: &AppState) {
                 "Default branch: ",
                 Style::default().add_modifier(Modifier::BOLD),
             ),
-            Span::styled(default, Style::default().fg(Color::Cyan)),
+            Span::styled(default, Style::default().fg(Color::Blue)),
         ]));
     }
 
@@ -204,7 +204,7 @@ pub(crate) fn render_detail(frame: &mut Frame, state: &AppState) {
         for wt in &repo.worktrees {
             lines.push(Line::from(vec![
                 Span::raw("  "),
-                Span::styled(&wt.branch, Style::default().fg(Color::Cyan)),
+                Span::styled(&wt.branch, Style::default().fg(Color::Blue)),
                 Span::raw("  "),
                 if wt.dirty_files > 0 {
                     Span::styled(

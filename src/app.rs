@@ -226,6 +226,16 @@ impl AppState {
                 }
             }
         }
+
+        // Clear "Refreshing..." once all git fetches have settled.
+        if self.status_message.as_deref() == Some("Refreshing...") {
+            let all_done = self.repos.iter().all(|r| {
+                matches!(r.fetch_status, FetchStatus::Done | FetchStatus::Failed(_))
+            });
+            if all_done {
+                self.status_message = None;
+            }
+        }
     }
 
     fn repo_by_path_mut(&mut self, path: &Path) -> Option<&mut Repo> {

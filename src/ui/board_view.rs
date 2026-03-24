@@ -199,7 +199,7 @@ fn render_branch_line(frame: &mut Frame, repo: &Repo, inner: Rect, spinner_index
     let mut parts: Vec<Span> = Vec::new();
     parts.push(Span::styled(
         format!("branch:{}", repo.current_branch),
-        Style::default().fg(Color::White),
+        Style::default().fg(Color::Reset),
     ));
     if let Some(default) = &repo.default_branch {
         if *default != repo.current_branch {
@@ -317,7 +317,7 @@ fn render_worktree_lines(frame: &mut Frame, repo: &Repo, inner: Rect) {
         };
         let wt_line = Line::from(vec![
             Span::styled("↳ ", Style::default().fg(Color::DarkGray)),
-            Span::styled(&wt.branch, Style::default().fg(Color::Cyan)),
+            Span::styled(&wt.branch, Style::default().fg(Color::Blue)),
             dirty,
         ]);
         frame.render_widget(
@@ -358,7 +358,7 @@ fn build_card_title(repo: &Repo, name_color: Color) -> Line<'_> {
         spans.push(Span::styled(parent_name, name_style));
         spans.push(Span::styled(
             format!(" [{}]", repo.current_branch),
-            Style::default().fg(Color::Cyan),
+            Style::default().fg(Color::Blue),
         ));
     } else {
         spans.push(Span::styled(&repo.name, name_style));
