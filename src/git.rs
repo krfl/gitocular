@@ -23,7 +23,13 @@ pub(crate) fn scan_repos(dir: &Path) -> Result<Vec<Repo>, String> {
         if !path.is_dir() {
             continue;
         }
-        classify_entry(&path, &mut main_repos, &mut worktree_entries);
+        if path.join(".git").exists() {
+            classify_entry(&path, &mut main_repos, &mut worktree_entries);
+        } else {
+            // Gitflow support: namespace dirs like feat/, release/, hotfix/
+            // contain worktrees one level deeper (e.g., feat/branch-name/)
+            scan_gitflow_children(&path, &mut main_repos, &mut worktree_entries);
+        }
     }
 
     // Group worktrees under their main repos
@@ -117,20 +123,60 @@ fn scan_bare_container(
     };
     for entry in entries.flatten() {
         let path = entry.path();
-        if !path.is_dir() || !path.join(".git").exists() {
+        if !path.is_dir() {
             continue;
         }
-        // Each child with a .git file should be a worktree of the bare repo
-        if let Some(main_path) = resolve_worktree_main(&path) {
-            if let Some(wt) = build_worktree_info(&path) {
-                worktree_entries.push((main_path, wt));
-            }
+        if path.join(".git").exists() {
+            // Each child with a .git file should be a worktree of the bare repo
+            classify_bare_child(&path, main_repos, worktree_entries);
         } else {
-            // Shouldn't normally happen, but handle gracefully
-            if let Some(repo) = build_repo_status(&path) {
-                let canon = path.canonicalize().unwrap_or_else(|_| path.to_path_buf());
-                main_repos.insert(canon, repo);
-            }
+            // Gitflow support: namespace dirs like feat/, release/, hotfix/
+            scan_gitflow_children(&path, main_repos, worktree_entries);
+        }
+    }
+}
+
+/// Process a single child directory inside a bare container that has a `.git` file.
+fn classify_bare_child(
+    path: &Path,
+    main_repos: &mut HashMap<PathBuf, Repo>,
+    worktree_entries: &mut Vec<(PathBuf, WorktreeInfo)>,
+) {
+    if let Some(main_path) = resolve_worktree_main(path) {
+        if let Some(wt) = build_worktree_info(path) {
+            worktree_entries.push((main_path, wt));
+        }
+    } else {
+        // Shouldn't normally happen, but handle gracefully
+        if let Some(repo) = build_repo_status(path) {
+            let canon = path.canonicalize().unwrap_or_else(|_| path.to_path_buf());
+            main_repos.insert(canon, repo);
+        }
+    }
+}
+
+/// Scan one level deeper for gitflow-style worktree directories.
+/// Handles branch namespaces like feat/, release/, hotfix/ that create
+/// nested directory structures (e.g., feat/branch-name/).
+fn scan_gitflow_children(
+    path: &Path,
+    main_repos: &mut HashMap<PathBuf, Repo>,
+    worktree_entries: &mut Vec<(PathBuf, WorktreeInfo)>,
+) {
+    // Skip hidden directories (e.g., .bare, .git)
+    if path
+        .file_name()
+        .is_some_and(|n| n.to_string_lossy().starts_with('.'))
+    {
+        return;
+    }
+    let Ok(entries) = std::fs::read_dir(path) else {
+        return;
+    };
+    for entry in entries.flatten() {
+        let child = entry.path();
+        if child.is_dir() {
+            classify_entry(&child, main_repos, worktree_entries);
         }
     }
 }
