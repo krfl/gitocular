@@ -83,6 +83,12 @@ variables:
 The URL scheme (`http` or `https`) is inferred from the git remote URL, so
 `http://` remotes will use plain HTTP for API calls.
 
+GitHub Enterprise is not currently supported — only `github.com` is recognized.
+
+Each forge type uses a single token (`GITEA_TOKEN`, `GITLAB_TOKEN`), so if you
+have multiple self-hosted instances of the same type they will share the same
+credentials.
+
 API calls run on a separate thread pool (4 workers) and won't block navigation.
 
 ### Worktree support

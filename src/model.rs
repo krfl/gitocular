@@ -53,11 +53,26 @@ impl ForgeKind {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Scheme {
+    Http,
+    Https,
+}
+
+impl Scheme {
+    pub(crate) fn as_str(self) -> &'static str {
+        match self {
+            Scheme::Http => "http",
+            Scheme::Https => "https",
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct RemoteInfo {
     pub kind: ForgeKind,
     pub host: String,
-    pub scheme: String,
+    pub scheme: Scheme,
     pub owner: String,
     pub repo_name: String,
 }

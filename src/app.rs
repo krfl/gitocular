@@ -905,12 +905,12 @@ mod tests {
     // -- Sort mode --
 
     fn forge_repo(name: &str, prs: u32, issues: u32) -> Repo {
-        use crate::model::{ForgeKind, ForgeStats, RemoteInfo};
+        use crate::model::{ForgeKind, ForgeStats, RemoteInfo, Scheme};
         let mut r = Repo::test_default(name);
         r.remote_info = Some(RemoteInfo {
             kind: ForgeKind::GitHub,
             host: "github.com".to_string(),
-            scheme: "https".to_string(),
+            scheme: Scheme::Https,
             owner: "owner".to_string(),
             repo_name: name.to_string(),
         });
