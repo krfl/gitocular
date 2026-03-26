@@ -19,16 +19,21 @@ pub(crate) fn parse_remote_url(url: &str) -> Option<RemoteInfo> {
         return None;
     }
 
-    let (host, path) = if url.starts_with("ssh://") || url.starts_with("git+ssh://") {
+    let (scheme, host, path) = if url.starts_with("ssh://") || url.starts_with("git+ssh://") {
         // ssh://git@github.com/owner/repo.git
         // ssh://git@github.com:22/owner/repo.git
-        parse_ssh_scheme(url)?
-    } else if url.starts_with("https://") || url.starts_with("http://") {
-        // https://github.com/owner/repo.git
-        parse_https(url)?
+        let (host, path) = parse_ssh_scheme(url)?;
+        ("https".to_string(), host, path)
+    } else if url.starts_with("https://") {
+        let (host, path) = parse_https(url)?;
+        ("https".to_string(), host, path)
+    } else if url.starts_with("http://") {
+        let (host, path) = parse_https(url)?;
+        ("http".to_string(), host, path)
     } else if url.contains(':') && !url.contains("://") {
         // git@github.com:owner/repo.git
-        parse_scp_style(url)?
+        let (host, path) = parse_scp_style(url)?;
+        ("https".to_string(), host, path)
     } else {
         return None;
     };
@@ -47,6 +52,7 @@ pub(crate) fn parse_remote_url(url: &str) -> Option<RemoteInfo> {
     Some(RemoteInfo {
         kind,
         host,
+        scheme,
         owner: owner.to_string(),
         repo_name: repo_name.to_string(),
     })
@@ -114,8 +120,29 @@ fn forge_kind_from_host(host: &str) -> Option<ForgeKind> {
         "github.com" => Some(ForgeKind::GitHub),
         "gitlab.com" => Some(ForgeKind::GitLab),
         "codeberg.org" => Some(ForgeKind::Gitea),
-        _ => None,
+        _ => custom_forge_kind(host),
     }
+}
+
+/// Check GITEA_HOSTS / GITLAB_HOSTS env vars for self-hosted instances.
+/// Values are comma-separated host[:port] entries, e.g. "localhost:3030,gitea.lan".
+fn custom_forge_kind(host: &str) -> Option<ForgeKind> {
+    if parse_host_list("GITEA_HOSTS").iter().any(|h| h == host) {
+        return Some(ForgeKind::Gitea);
+    }
+    if parse_host_list("GITLAB_HOSTS").iter().any(|h| h == host) {
+        return Some(ForgeKind::GitLab);
+    }
+    None
+}
+
+fn parse_host_list(env_var: &str) -> Vec<String> {
+    std::env::var(env_var)
+        .unwrap_or_default()
+        .split(',')
+        .map(|s| s.trim().to_lowercase())
+        .filter(|s| !s.is_empty())
+        .collect()
 }
 
 // ── Token Resolution ─────────────────────────────────────────────────
@@ -181,10 +208,12 @@ pub(crate) fn fetch_forge_stats(
 ) -> Result<ForgeStats, String> {
     match info.kind {
         ForgeKind::GitHub => fetch_github_stats(&info.owner, &info.repo_name, token),
-        ForgeKind::GitLab => fetch_gitlab_stats(&info.owner, &info.repo_name, token),
-        ForgeKind::Gitea => {
-            fetch_gitea_stats(&info.host, &info.owner, &info.repo_name, token)
-        }
+        ForgeKind::GitLab => fetch_gitlab_stats(
+            &info.scheme, &info.host, &info.owner, &info.repo_name, token,
+        ),
+        ForgeKind::Gitea => fetch_gitea_stats(
+            &info.scheme, &info.host, &info.owner, &info.repo_name, token,
+        ),
     }
 }
 
@@ -244,6 +273,8 @@ fn fetch_github_stats(
 }
 
 fn fetch_gitlab_stats(
+    scheme: &str,
+    host: &str,
     owner: &str,
     repo: &str,
     token: Option<&str>,
@@ -253,7 +284,7 @@ fn fetch_gitlab_stats(
     let encoded_path = urlencode_path(&project_path);
 
     // Call 1: project info
-    let url = format!("https://gitlab.com/api/v4/projects/{encoded_path}");
+    let url = format!("{scheme}://{host}/api/v4/projects/{encoded_path}");
     let mut req = agent.get(&url);
     if let Some(t) = token {
         req = req.set("PRIVATE-TOKEN", t);
@@ -266,7 +297,7 @@ fn fetch_gitlab_stats(
 
     // Call 2: count open MRs
     let mr_url = format!(
-        "https://gitlab.com/api/v4/projects/{encoded_path}/merge_requests?state=opened&per_page=1"
+        "{scheme}://{host}/api/v4/projects/{encoded_path}/merge_requests?state=opened&per_page=1"
     );
     let mut mr_req = agent.get(&mr_url);
     if let Some(t) = token {
@@ -287,6 +318,7 @@ fn fetch_gitlab_stats(
 }
 
 fn fetch_gitea_stats(
+    scheme: &str,
     host: &str,
     owner: &str,
     repo: &str,
@@ -294,7 +326,7 @@ fn fetch_gitea_stats(
 ) -> Result<ForgeStats, String> {
     let agent = agent();
 
-    let url = format!("https://{host}/api/v1/repos/{owner}/{repo}");
+    let url = format!("{scheme}://{host}/api/v1/repos/{owner}/{repo}");
     let mut req = agent.get(&url);
     if let Some(t) = token {
         req = req.set("Authorization", &format!("token {t}"));
@@ -470,6 +502,72 @@ mod tests {
     fn parse_rejects_subgroups() {
         // We only support owner/repo, not nested paths
         assert!(parse_remote_url("https://github.com/owner/sub/repo.git").is_none());
+    }
+
+    // -- Scheme preservation --
+
+    #[test]
+    fn parse_https_scheme_preserved() {
+        let info = parse_remote_url("https://github.com/owner/repo").unwrap();
+        assert_eq!(info.scheme, "https");
+    }
+
+    #[test]
+    fn parse_http_scheme_preserved() {
+        let info = parse_remote_url("http://github.com/owner/repo").unwrap();
+        assert_eq!(info.scheme, "http");
+    }
+
+    #[test]
+    fn parse_ssh_defaults_to_https_scheme() {
+        let info = parse_remote_url("git@github.com:owner/repo").unwrap();
+        assert_eq!(info.scheme, "https");
+    }
+
+    #[test]
+    fn parse_ssh_scheme_defaults_to_https() {
+        let info = parse_remote_url("ssh://git@github.com/owner/repo").unwrap();
+        assert_eq!(info.scheme, "https");
+    }
+
+    // -- Custom host detection --
+
+    #[test]
+    fn custom_gitea_host_from_env() {
+        // SAFETY: test-only env manipulation
+        unsafe { std::env::set_var("GITEA_HOSTS", "gitea.local:3030") };
+        let info = parse_remote_url("http://gitea.local:3030/owner/repo.git").unwrap();
+        assert_eq!(info.kind, ForgeKind::Gitea);
+        assert_eq!(info.host, "gitea.local:3030");
+        assert_eq!(info.scheme, "http");
+        unsafe { std::env::remove_var("GITEA_HOSTS") };
+    }
+
+    #[test]
+    fn custom_gitlab_host_from_env() {
+        // SAFETY: test-only env manipulation
+        unsafe { std::env::set_var("GITLAB_HOSTS", "gitlab.corp.com") };
+        let info = parse_remote_url("https://gitlab.corp.com/team/project.git").unwrap();
+        assert_eq!(info.kind, ForgeKind::GitLab);
+        assert_eq!(info.host, "gitlab.corp.com");
+        unsafe { std::env::remove_var("GITLAB_HOSTS") };
+    }
+
+    #[test]
+    fn custom_hosts_comma_separated() {
+        // SAFETY: test-only env manipulation
+        unsafe { std::env::set_var("GITEA_HOSTS", "gitea1.local, gitea2.local:8080") };
+        assert!(parse_host_list("GITEA_HOSTS").contains(&"gitea1.local".to_string()));
+        assert!(parse_host_list("GITEA_HOSTS").contains(&"gitea2.local:8080".to_string()));
+        unsafe { std::env::remove_var("GITEA_HOSTS") };
+    }
+
+    #[test]
+    fn custom_hosts_empty_env_returns_none() {
+        // SAFETY: test-only env manipulation
+        unsafe { std::env::remove_var("GITEA_HOSTS") };
+        unsafe { std::env::remove_var("GITLAB_HOSTS") };
+        assert!(parse_remote_url("https://unknown.host.com/owner/repo.git").is_none());
     }
 
     // -- Link Header Parsing --

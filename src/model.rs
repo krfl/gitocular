@@ -57,6 +57,7 @@ impl ForgeKind {
 pub(crate) struct RemoteInfo {
     pub kind: ForgeKind,
     pub host: String,
+    pub scheme: String,
     pub owner: String,
     pub repo_name: String,
 }

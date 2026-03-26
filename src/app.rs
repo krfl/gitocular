@@ -910,6 +910,7 @@ mod tests {
         r.remote_info = Some(RemoteInfo {
             kind: ForgeKind::GitHub,
             host: "github.com".to_string(),
+            scheme: "https".to_string(),
             owner: "owner".to_string(),
             repo_name: name.to_string(),
         });

@@ -69,6 +69,20 @@ Supported forges:
 | Codeberg | `CODEBERG_TOKEN` or `GITEA_TOKEN` |
 | Gitea | `GITEA_TOKEN` |
 
+#### Self-hosted instances
+
+GitPulse recognizes GitHub, GitLab, and Codeberg by their hostnames automatically.
+For self-hosted Gitea or GitLab instances, register the host via environment
+variables:
+
+| Variable | Purpose |
+|---|---|
+| `GITEA_HOSTS` | Comma-separated list of Gitea/Forgejo hostnames (e.g. `localhost:3030,gitea.lan`) |
+| `GITLAB_HOSTS` | Comma-separated list of self-hosted GitLab hostnames (e.g. `gitlab.corp.com`) |
+
+The URL scheme (`http` or `https`) is inferred from the git remote URL, so
+`http://` remotes will use plain HTTP for API calls.
+
 API calls run on a separate thread pool (4 workers) and won't block navigation.
 
 ### Worktree support
@@ -145,6 +159,13 @@ export GITEA_TOKEN="..."
 ```
 
 For GitHub, if no token is set GitPulse falls back to `gh auth token`.
+
+For self-hosted instances, also set the host variables:
+
+```sh
+export GITEA_HOSTS="localhost:3030"
+export GITLAB_HOSTS="gitlab.corp.com"
+```
 
 ## Built with
 
