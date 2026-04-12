@@ -101,6 +101,13 @@ impl AppState {
                     .status();
 
                 *terminal = ratatui::init();
+
+                // Refresh the repo the user was working in
+                if let Some(repo) = self.repos.iter_mut().find(|r| {
+                    r.path == path || r.worktrees.iter().any(|wt| wt.path == path)
+                }) {
+                    git::refresh_repo_status(repo);
+                }
             }
         }
         Ok(())
