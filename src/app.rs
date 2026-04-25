@@ -305,10 +305,8 @@ impl AppState {
             KeyCode::Char('k') | KeyCode::Up => self.move_card(-1),
             KeyCode::Tab => self.cycle_repo(1),
             KeyCode::BackTab => self.cycle_repo(-1),
-            KeyCode::Enter => {
-                if self.selected_repo().is_some() {
-                    self.overlay = Overlay::Detail;
-                }
+            KeyCode::Enter if self.selected_repo().is_some() => {
+                self.overlay = Overlay::Detail;
             }
             KeyCode::Char('?') => self.overlay = Overlay::Help,
             KeyCode::Char('r') => self.refresh(),
@@ -347,10 +345,8 @@ impl AppState {
         };
         match key.code {
             KeyCode::Esc | KeyCode::Char('q') => self.overlay = Overlay::Board,
-            KeyCode::Char('j') | KeyCode::Down => {
-                if !paths.is_empty() {
-                    *index = (*index + 1).min(paths.len() - 1);
-                }
+            KeyCode::Char('j') | KeyCode::Down if !paths.is_empty() => {
+                *index = (*index + 1).min(paths.len() - 1);
             }
             KeyCode::Char('k') | KeyCode::Up => {
                 *index = index.saturating_sub(1);
