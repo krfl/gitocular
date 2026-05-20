@@ -109,7 +109,7 @@ pub(crate) fn render_detail(frame: &mut Frame, state: &AppState) {
             Style::default().fg(Color::Green),
         )),
         FetchStatus::Failed(e) => Line::from(Span::styled(
-            format!("Fetch: failed — {e}"),
+            format!("Fetch: failed ({e})"),
             Style::default().fg(Color::Red),
         )),
     };

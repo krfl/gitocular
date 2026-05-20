@@ -80,7 +80,7 @@ fn parse_ssh_scheme(url: &str) -> Option<(String, String)> {
                 // colon before slash: could be host:port/path
                 let rest = &after_user[colon_idx + 1..];
                 if let Some(slash_idx) = rest.find('/') {
-                    // host:port/path — skip the port
+                    // host:port/path, so skip the port
                     (&after_user[..colon_idx], &rest[slash_idx..])
                 } else {
                     return None;

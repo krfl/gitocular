@@ -2,7 +2,7 @@
 
 A TUI dashboard for monitoring git repository status. Inspired by
 [kando-tui](https://github.com/krfl/kando), Gitocular borrows the visual
-language of a kanban board — repos are sorted into columns by their sync state
+language of a kanban board. Repos are sorted into columns by their sync state,
 so you can see at a glance which ones need attention and which are clean.
 
 ## Why a kanban board?
@@ -50,7 +50,7 @@ won't block the dashboard.
 ### Pull, push, and shell
 
 From the dashboard you can pull, push, or drop into a shell for any selected
-repo — all without leaving the TUI. Pull and push run in background threads so
+repo, all without leaving the TUI. Pull and push run in background threads so
 the interface stays responsive.
 
 ### Forge integration
@@ -83,7 +83,7 @@ variables:
 The URL scheme (`http` or `https`) is inferred from the git remote URL, so
 `http://` remotes will use plain HTTP for API calls.
 
-GitHub Enterprise is not currently supported — only `github.com` is recognized.
+GitHub Enterprise is not currently supported. Only `github.com` is recognized.
 
 Each forge type uses a single token (`GITEA_TOKEN`, `GITLAB_TOKEN`), so if you
 have multiple self-hosted instances of the same type they will share the same
@@ -104,9 +104,9 @@ Gitocular understands git worktrees:
 
 Press `v` to cycle the sort order within each column:
 
-1. **Name** — alphabetical (default)
-2. **PRs** — most open pull requests first
-3. **Issues** — most open issues first
+1. **Name** (alphabetical, default)
+2. **PRs** (most open pull requests first)
+3. **Issues** (most open issues first)
 
 ## Keybindings
 
@@ -129,7 +129,7 @@ Press `v` to cycle the sort order within each column:
 | `p` | Pull selected repo |
 | `P` | Push selected repo |
 | `s` | Open shell in repo (or shell picker for worktrees) |
-| `r` | Refresh — re-scan and fetch |
+| `r` | Refresh (re-scan and fetch) |
 | `v` | Cycle sort mode |
 | `?` | Toggle help screen |
 | `Esc` / `q` | Close overlay or quit |
@@ -204,10 +204,10 @@ export GITLAB_HOSTS="gitlab.corp.com"
 
 ## Built with
 
-- [ratatui](https://ratatui.rs/) + [crossterm](https://github.com/crossterm-rs/crossterm) — terminal UI
-- [clap](https://github.com/clap-rs/clap) — CLI argument parsing
-- [ureq](https://github.com/algesten/ureq) — HTTP client for forge APIs
-- [color-eyre](https://github.com/eyre-rs/color-eyre) — error reporting
+- [ratatui](https://ratatui.rs/) + [crossterm](https://github.com/crossterm-rs/crossterm) for the terminal UI
+- [clap](https://github.com/clap-rs/clap) for CLI argument parsing
+- [ureq](https://github.com/algesten/ureq) as the HTTP client for forge APIs
+- [color-eyre](https://github.com/eyre-rs/color-eyre) for error reporting
 
 ## License
 

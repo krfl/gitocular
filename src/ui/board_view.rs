@@ -413,7 +413,7 @@ mod tests {
     #[test]
     fn scroll_offset_card_taller_than_viewport() {
         let heights = vec![5, 20, 5];
-        // Card 1 is 20, viewport is 10 — offset becomes selected itself
+        // Card 1 is 20, viewport is 10, so offset becomes selected itself
         assert_eq!(compute_scroll_offset(&heights, 1, 10), 1);
     }
 

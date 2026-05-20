@@ -261,7 +261,7 @@ pub(crate) fn cmd_pull(path: &Path, json: bool) -> Result<()> {
         .collect();
 
     if behind.is_empty() && !json {
-        println!("No repos are behind — nothing to pull.");
+        println!("No repos are behind, nothing to pull.");
         if !fetch_failures.is_empty() {
             std::process::exit(1);
         }

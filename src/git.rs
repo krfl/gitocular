@@ -38,7 +38,7 @@ pub(crate) fn scan_repos(dir: &Path) -> Result<Vec<Repo>, String> {
         if let Some(repo) = main_repos.get_mut(&canon) {
             repo.worktrees.push(wt);
         } else {
-            // Orphan worktree — main repo outside scan dir
+            // Orphan worktree whose main repo lives outside the scan dir
             if let Some(mut repo) = build_repo_status(&wt.path) {
                 repo.is_worktree = true;
                 repo.worktree_main = Some(main_path);
@@ -76,7 +76,7 @@ fn classify_entry(
         return;
     }
 
-    // .git is a file — either a standard worktree or a bare container
+    // .git is a file, so this is either a standard worktree or a bare container
     if let Some(main_path) = resolve_worktree_main(path) {
         // Standard worktree (gitdir points to .../worktrees/<name>)
         if let Some(wt) = build_worktree_info(path) {
@@ -85,7 +85,7 @@ fn classify_entry(
         return;
     }
 
-    // Not a standard worktree — check if it's a bare container
+    // Not a standard worktree, so check if it's a bare container
     // (e.g., .git file contains "gitdir: ./.bare")
     if is_bare_container(path) {
         scan_bare_container(path, main_repos, worktree_entries);
